@@ -3,6 +3,19 @@
 This project implements the 1D-JustoLiuNet for classification tasks on hyperspectral satellite image captures from the HYPSO-2 satellite.
 The 1D-JustoLiuNet model is based on recent work by Justo et al. (2023) and optimized for deployment in resource-constrained satellite environments.
 
+Full theoretical background, model design, evaluation metrics, and experimental results are presented in the accompanying [final report PDF](readme_files/Final_Report_1D-JustoLiuNet_HYPSO-2.pdf), submitted as part of an academic research contribution at NTNU SmallSat Lab.
+
+## Table of Contents
+
+- [Requirements](#requirements)
+- [Usage](#usage)
+- [Structure](#structure)
+- [Theory, Testing and Results](#theory-testing-and-results)
+- [License](#license)
+- [References](#references)
+- [Acknowledgments](#acknowledgments)
+
+
 ## Requirements
 
 - CUDA version: 12.6
@@ -17,13 +30,20 @@ The 1D-JustoLiuNet model is based on recent work by Justo et al. (2023) and opti
     git clone https://github.com/raeesiarya123/HYPSO-CNN.git
     ```
 
-2. Prepare your dataset:
+2. Install required packages:
+    ```bash
+    pip3 install -r requirements.txt
+    ```   
+
+This project used Python 3.12.3 in a virtual `venv` environment.
+
+3. Prepare your dataset:
     1. Create a directory named `corrected_labeled_data_CLOUD` and place all `.dat` files inside.
     2. The `.dat` files should have the format `(area_name)_(date_of_capture)-l1a_products_dn_class.dat`.
     3. Have a directory with all relevant raw `.bip` files called `raw_data`.
     4. Run the function `create_csv_file` in `manage_data.py` to create CSV files with correct paths.
 
-3. Train and evaluate the model:
+4. Train and evaluate the model:
 
     ```bash
     python scripts/train.py
@@ -31,7 +51,7 @@ The 1D-JustoLiuNet model is based on recent work by Justo et al. (2023) and opti
 
 ## Structure
 
-1. Class Diagram (shortened, full version in page 49 [here](readme_files/Final_Report_1D-JustoLiuNet_HYPSO-2.pdf))
+1. Class Diagram (shortened, full version in page 50 [here](readme_files/Final_Report_1D-JustoLiuNet_HYPSO-2.pdf))
 
 ![Shortened class diagram](readme_files/class_diagram_HYPSO_shortened.png)
 

@@ -17,6 +17,25 @@ from models.cnn_1d import JustoLiuNet1D_torch
 #######################################################################################
 #######################################################################################
 
+"""
+This script is used for training a 1D CNN model for hyperspectral data classification. 
+It includes the following steps:
+
+1. Import necessary libraries and modules.
+2. Set up the MLflow experiment for tracking.
+3. Configure the device (CPU or GPU) for training.
+4. Define hyperparameters such as epochs, batch size, learning rate, etc.
+5. Load and preprocess training and evaluation datasets:
+    - Read file paths from CSV files.
+    - Normalize the hyperspectral data using a normalization manager.
+    - Create PyTorch datasets and dataloaders for training and evaluation.
+6. Initialize the 1D CNN model with specified parameters.
+7. Set up the optimizer (AdamW), learning rate scheduler, and loss function (CrossEntropyLoss or FocalLoss).
+8. Log pre-training information to MLflow, including model architecture and hyperparameters.
+9. Train the model using a training loop that iterates over epochs and batches.
+10. Print the total number of model parameters and training progress.
+"""
+
 # MLflow
 mlflow.set_experiment("CNN_hyperspectral_v1")
 

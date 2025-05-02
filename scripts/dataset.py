@@ -13,6 +13,21 @@ from manage_data import read_csv_file
 
 class merged_hyperspectral_dataset(Dataset):
     def __init__(self, list_of_images, list_of_labels=None, normalizer=None):
+        """
+        Initializes the dataset by loading images and optionally labels, and applies normalization if provided.
+
+        Args:
+            list_of_images (list of str): A list of file paths to the image files to be loaded.
+            list_of_labels (list of str, optional): A list of file paths to the label files to be loaded. 
+                If None, labels will not be loaded. Defaults to None.
+            normalizer (object, optional): An object with a `transform` method to normalize the images. 
+                If None, no normalization is applied. Defaults to None.
+
+        Attributes:
+            images (torch.Tensor): A tensor containing the loaded and optionally normalized images.
+            labels (torch.Tensor or None): A tensor containing the loaded labels if provided, otherwise None.
+        """
+
         all_images = []
 
         if list_of_labels is not None:
@@ -39,34 +54,27 @@ class merged_hyperspectral_dataset(Dataset):
             self.images = normalizer.transform(self.images, verify=True, verbose=False)
 
     def __len__(self):
+        """
+        Returns the length of the dataset.
+        """
         return self.images.shape[0]
     
     def __getitem__(self, idx):
-        #print(self.images[idx].shape)
+        """
+        Retrieves an item from the dataset at the specified index.
+
+        Args:
+            idx (int): The index of the item to retrieve.
+
+        Returns:
+            If `self.labels` is None:
+                numpy.ndarray or torch.Tensor: The image at the specified index.
+            Otherwise:
+                tuple: A tuple containing:
+                    - numpy.ndarray or torch.Tensor: The image at the specified index.
+                    - numpy.ndarray or torch.Tensor: The corresponding label at the specified index.
+        """
         if self.labels is None:
             return self.images[idx]
         else:
             return self.images[idx], self.labels[idx]
-
-#######################################################################################
-
-"""
-bip_paths, dat_paths, png_paths = read_csv_file("csv/train_files.csv")
-
-normalizer = normalization_manager()
-
-raw_dataset = merged_hyperspectral_dataset(bip_paths, dat_paths)
-normalizer.fit(raw_dataset.images)
-dataset = merged_hyperspectral_dataset(
-    bip_paths, dat_paths, normalizer=normalizer
-)
-
-dataloader = DataLoader(dataset, batch_size=128, shuffle=True)
-
-# Test en enkelt batch
-for pixels, labels in dataloader:
-    print(colored(f"Pixels shape: {pixels.shape}", "light_blue"))   # Forventet: (128, num_bands)
-    print(colored(f"Labels shape: {labels.shape}", "light_green"))  # Forventet: (128,)
-    print(colored(f"Unique labels in batch: {torch.unique(labels)}", "light_yellow"))
-    break"
-"""

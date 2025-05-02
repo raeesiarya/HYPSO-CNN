@@ -10,6 +10,11 @@ from libraries import *
 #######################################################################################
 
 def load_image(image_path, HEIGHT=598, WIDTH=1092, BANDS=120):
+    """
+    Load a hyperspectral image from a .bip file and reshape it to (pixels, bands).
+    The image is reshaped to (bands, height, width) and then transposed to (height, width, bands).
+    The bands are then cut to remove the first 3 and last 117 bands.
+    """
     with open(image_path, 'rb') as f:
         image = cp.fromfile(f, dtype=cp.uint16)
         image = cp.asnumpy(image)
@@ -24,6 +29,11 @@ def load_image(image_path, HEIGHT=598, WIDTH=1092, BANDS=120):
 #######################################################################################
 
 def load_label(label_path, HEIGHT=598, WIDTH=1092):
+    """
+    Load a label file and reshape it to (pixels,).
+    The label is reshaped to (height, width) and then flattened.
+    The labels are then adjusted to start from 0.
+    """
     label = np.fromfile(label_path, dtype=np.uint8)
     label = label.reshape((HEIGHT, WIDTH))
     label = label - 1
@@ -60,6 +70,12 @@ def global_min_max_normalization(images, verbose=False):
 #######################################################################################
 
 def verify_global_min_max_normalization(original_images, normalized_images, epsilon=1e-8):
+    """
+    Verify that the normalization of the images follows the min-max normalization formula.
+    The formula is:
+    normalized_images = (original_images - min_vals) / (max_vals - min_vals + epsilon)
+    where min_vals and max_vals are the minimum and maximum values for each band across all pixels.
+    """
     min_vals = original_images.min(dim=0).values
     max_vals = original_images.max(dim=0).values
 
@@ -76,6 +92,9 @@ def verify_global_min_max_normalization(original_images, normalized_images, epsi
 #######################################################################################
 
 def check_normalization(images, color):
+    """
+    Check the normalization of the first 10 pixels in the images.
+    """
     br1 = 0
     for i in range(images.shape[0]):
         print(colored(images[i], color))
@@ -86,22 +105,45 @@ def check_normalization(images, color):
 #######################################################################################
 
 def cut_bands(image, trim_start=3, trim_end=117):
+    """
+    Cut the first 3 and last 117 bands from the image.
+    The image is expected to be in the shape (pixels, bands).
+    """
     return image[:, trim_start:trim_end]
 
 #######################################################################################
 
 class normalization_manager:
+    """
+    A class to manage the normalization of hyperspectral images using min-max normalization.
+    The normalization is done per band across all pixels in the dataset.
+    The class provides methods to fit the normalization parameters, transform the images,
+    verify the normalization, and check the normalization of the first 10 pixels.
+    """
     def __init__(self, epsilon=1e-8):
+        """
+        Initializes the normalization manager with an epsilon value to avoid division by zero.
+        """
         self.min_vals = None
         self.max_vals = None
         self.epsilon = epsilon
 
     def fit(self, images):
+        """
+        Fit the normalization parameters (min and max values) from the training data.
+        The min and max values are calculated separately for each spectral band across all pixels.
+        """
         self.min_vals = images.min(dim=0).values
         self.max_vals = images.max(dim=0).values
         print(colored("Fitted normalization parameters from training data.", "green"))
 
     def transform(self, images, verify=False, verbose=False):
+        """
+        Normalize the images using the fitted min and max values.
+        The normalization is done using the formula:
+        normalized_images = (images - min_vals) / (max_vals - min_vals + epsilon)
+        where min_vals and max_vals are the minimum and maximum values for each band across all pixels.
+        """
         if self.min_vals is None or self.max_vals is None:
             raise ValueError("NormalizationManager not fitted. Call fit(images) first.")
         
@@ -123,6 +165,12 @@ class normalization_manager:
         return norm_images
     
     def verify(self, original_images, normalized_images):
+        """
+        Verify that the normalization of the images follows the min-max normalization formula.
+        The formula is:
+        normalized_images = (original_images - min_vals) / (max_vals - min_vals + epsilon)
+        where min_vals and max_vals are the minimum and maximum values for each band across all pixels.
+        """
         expected = (original_images - self.min_vals) / (self.max_vals - self.min_vals + self.epsilon)
 
         if not torch.allclose(normalized_images, expected, atol=1e-6):
@@ -134,6 +182,9 @@ class normalization_manager:
             print(colored("All pixels are correctly normalized.","green"))
 
     def check_normalization(self, images, color):
+        """
+        Check the normalization of the first 10 pixels in the images.
+        """
         br1 = 0
         for i in range(images.shape[0]):
             print(colored(images[i], color))

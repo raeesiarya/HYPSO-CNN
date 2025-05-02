@@ -12,6 +12,19 @@ from functions.processing import load_label
 
 def train_loop(model, train_loader, val_loader, criterion, optimizer, scheduler, device,
                save_path="models/best_model.pth", num_epochs=30):
+    """
+    Train the model using the provided training and validation data loaders.
+    Args:
+        model (torch.nn.Module): The model to be trained.
+        train_loader (torch.utils.data.DataLoader): DataLoader for the training dataset.
+        val_loader (torch.utils.data.DataLoader): DataLoader for the validation dataset.
+        criterion (torch.nn.Module): Loss function.
+        optimizer (torch.optim.Optimizer): Optimizer for training.
+        scheduler (torch.optim.lr_scheduler): Learning rate scheduler.
+        device (torch.device): Device to perform training on (CPU or GPU).
+        save_path (str): Path to save the best model.
+        num_epochs (int): Number of epochs to train the model.
+    """
     best_accuracy = 0.0
 
     classes = ["Cloud", "Land", "Sea"]
@@ -75,6 +88,21 @@ def train_loop(model, train_loader, val_loader, criterion, optimizer, scheduler,
 
 def train_subloop(loop, model, criterion, optimizer, device,
                   predictions_per_epoch, labels_per_epoch, total_loss):
+    """
+    Train the model for one epoch.
+    Args:
+        loop (tqdm): Progress bar for the training loop.
+        model (torch.nn.Module): The model to be trained.
+        criterion (torch.nn.Module): Loss function.
+        optimizer (torch.optim.Optimizer): Optimizer for training.
+        device (torch.device): Device to perform training on (CPU or GPU).
+        predictions_per_epoch (list): List to store predictions for the epoch.
+        labels_per_epoch (list): List to store labels for the epoch.
+        total_loss (float): Total loss for the epoch.
+    Returns:
+        train_accuracy (float): Training accuracy for the epoch.
+        total_loss (float): Total loss for the epoch.
+    """
     correct = 0
     total = 0
     for batch in loop:
@@ -105,6 +133,20 @@ def train_subloop(loop, model, criterion, optimizer, device,
 
 def eval_subloop(val_loader, model, criterion, device,
                  all_labels_eval, all_preds_eval):
+    """
+    Evaluate the model on the validation dataset.
+    Args:
+        val_loader (torch.utils.data.DataLoader): DataLoader for the validation dataset.
+        model (torch.nn.Module): The model to be evaluated.
+        criterion (torch.nn.Module): Loss function.
+        device (torch.device): Device to perform evaluation on (CPU or GPU).
+        all_labels_eval (list): List to store labels for evaluation.
+        all_preds_eval (list): List to store predictions for evaluation.
+    Returns:
+        all_labels_eval (list): List of labels for evaluation.
+        all_preds_eval (list): List of predictions for evaluation.
+        val_loss (float): Total loss for the validation dataset.
+    """
     val_loss = 0.0
     for spectrum, labels in tqdm(val_loader, desc="Evaluation", leave=True, colour="blue"):
         spectrum = spectrum.unsqueeze(1).to(device)
@@ -122,6 +164,14 @@ def eval_subloop(val_loader, model, criterion, device,
 #######################################################################################
 
 def confusion_matrix_plot(all_labels_eval, all_preds_eval, classes, epoch):
+    """
+    Plot and save the confusion matrix.
+    Args:
+        all_labels_eval (list): List of labels for evaluation.
+        all_preds_eval (list): List of predictions for evaluation.
+        classes (list): List of class names.
+        epoch (int): Current epoch number.
+    """
     cm = confusion_matrix(all_labels_eval, all_preds_eval)
     plt.figure(figsize=(6, 5))
     sns.heatmap(cm, annot=True, fmt="d", cmap="Blues", xticklabels=classes, yticklabels=classes)
@@ -141,6 +191,13 @@ def confusion_matrix_plot(all_labels_eval, all_preds_eval, classes, epoch):
 #######################################################################################
 
 def save_model(model, best_accuracy, save_path):
+    """
+    Save the model state dictionary and best accuracy to a file.
+    Args:
+        model (torch.nn.Module): The model to be saved.
+        best_accuracy (float): Best accuracy achieved during training.
+        save_path (str): Path to save the model.
+    """
     torch.save({
         'model_state_dict': model.state_dict(),
         'best_accuracy': best_accuracy
@@ -149,19 +206,42 @@ def save_model(model, best_accuracy, save_path):
 #######################################################################################
 
 class FocalLoss(nn.Module):
+    """
+    Focal Loss for multi-class classification.
+    Args:
+        alpha (torch.Tensor, optional): Class weights for each class. If None, no weights are applied.
+        gamma (float, optional): Focusing parameter. Default is 2.
+        reduction (str, optional): Reduction method. Options are 'none', 'mean', or 'sum'.
+            Default is 'mean'.
+    """
     def __init__(self, alpha=None, gamma=2, reduction='mean'):
+        """
+        Initializes the Focal Loss.
+        Args:
+            alpha (torch.Tensor, optional): Class weights for each class. If None, no weights are applied.
+            gamma (float, optional): Focusing parameter. Default is 2.
+            reduction (str, optional): Reduction method. Options are 'none', 'mean', or 'sum'.
+                Default is 'mean'.
+        """
         super(FocalLoss, self).__init__()
-        self.alpha = alpha  # Forventer tensor med shape [n_classes]
+        self.alpha = alpha
         self.gamma = gamma
         self.reduction = reduction
 
     def forward(self, inputs, targets):
+        """
+        Forward pass for the Focal Loss.
+        Args:
+            inputs (torch.Tensor): Model predictions (logits).
+            targets (torch.Tensor): Ground truth labels.
+        Returns:
+            torch.Tensor: Computed Focal Loss.
+        """
         ce_loss = F.cross_entropy(inputs, targets, reduction='none')
         p_t = torch.exp(-ce_loss)
         
         if self.alpha is not None:
-            # Hent riktig alpha for hver klasse i batchen
-            alpha = self.alpha.gather(0, targets)  # Shape: [batch_size]
+            alpha = self.alpha.gather(0, targets)
             focal_loss = alpha * (1 - p_t) ** self.gamma * ce_loss
         else:
             focal_loss = (1 - p_t) ** self.gamma * ce_loss
@@ -175,6 +255,14 @@ class FocalLoss(nn.Module):
 #######################################################################################
 
 def get_class_weights(label_paths, num_classes):
+    """
+    Calculate class weights based on the frequency of each class in the dataset.
+    Args:
+        label_paths (list): List of paths to label files.
+        num_classes (int): Number of classes in the dataset.
+    Returns:
+        torch.Tensor: Class weights for each class.
+    """
     all_labels = []
 
     for path in label_paths:
@@ -203,6 +291,24 @@ def get_class_weights(label_paths, num_classes):
 def log_mlflow_pre_train(EPOCHS, BATCH_SIZE, LR, LABEL_SMOOTHING,
                KERNEL_SIZE, STARTING_KERNELS, NUM_FEATURES, NUM_CLASSES,
                optimizer, scheduler, criterion, model, train_dataset, eval_dataset):
+    """
+    Log hyperparameters and model information to MLflow.
+    Args:
+        EPOCHS (int): Number of epochs for training.
+        BATCH_SIZE (int): Batch size for training.
+        LR (float): Learning rate for the optimizer.
+        LABEL_SMOOTHING (float): Label smoothing parameter.
+        KERNEL_SIZE (int): Kernel size for the model.
+        STARTING_KERNELS (int): Number of starting kernels for the model.
+        NUM_FEATURES (int): Number of features in the input data.
+        NUM_CLASSES (int): Number of classes in the output data.
+        optimizer (torch.optim.Optimizer): Optimizer used for training.
+        scheduler (torch.optim.lr_scheduler): Learning rate scheduler used for training.
+        criterion (torch.nn.Module): Loss function used for training.
+        model (torch.nn.Module): Model architecture used for training.
+        train_dataset (torch.utils.data.Dataset): Training dataset.
+        eval_dataset (torch.utils.data.Dataset): Evaluation dataset.
+    """
     mlflow.log_param("EPOCHS", EPOCHS)
     mlflow.log_param("BATCH_SIZE", BATCH_SIZE)
     mlflow.log_param("LR", LR)
@@ -221,6 +327,15 @@ def log_mlflow_pre_train(EPOCHS, BATCH_SIZE, LR, LABEL_SMOOTHING,
 #######################################################################################
 
 def log_mlflow_train(train_accuracy, val_accuracy, train_loss, val_loss, epoch):
+    """
+    Log training and validation metrics to MLflow.
+    Args:
+        train_accuracy (float): Training accuracy for the current epoch.
+        val_accuracy (float): Validation accuracy for the current epoch.
+        train_loss (float): Training loss for the current epoch.
+        val_loss (float): Validation loss for the current epoch.
+        epoch (int): Current epoch number.
+    """
     mlflow.log_metric(f"train_accuracy", train_accuracy/100, step=epoch)
     mlflow.log_metric(f"val_accuracy", val_accuracy, step=epoch)
     mlflow.log_metric(f"train_loss", train_loss, step=epoch)
@@ -229,6 +344,12 @@ def log_mlflow_train(train_accuracy, val_accuracy, train_loss, val_loss, epoch):
 #######################################################################################
 
 def log_classification_report_mlflow(report_dict, epoch):
+    """
+    Log classification report metrics to MLflow.
+    Args:
+        report_dict (dict): Classification report dictionary containing metrics.
+        epoch (int): Current epoch number.
+    """
     for class_name, metrics in report_dict.items():
         if isinstance(metrics, dict):
             for metric_name, value in metrics.items():

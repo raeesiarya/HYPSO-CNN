@@ -27,7 +27,7 @@ Full theoretical background, model design, evaluation metrics, and experimental 
 1. Clone the repository:
 
     ```bash
-    git clone https://github.com/raeesiarya123/HYPSO-CNN.git
+    git clone https://github.com/raeesiarya/HYPSO-CNN.git
     ```
 
 2. Install required packages:

@@ -1,6 +1,5 @@
-scraping
+scraping/get_data.py
 csv
-corrected_labeled_data_CLOUD
 mlruns
 justo_images
 __pycache__

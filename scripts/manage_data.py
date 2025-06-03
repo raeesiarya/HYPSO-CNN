@@ -117,6 +117,8 @@ def create_csv_file():
     'evaluate_files.csv' with headers: ["dat_files", "bip_files", "png_files"].
     """
 
+    os.makedirs('csv', exist_ok=True)
+
     dat_files_paths, png_files_paths, bip_files_paths = get_dat_png_bip()
 
     dat_files_paths = sorted(dat_files_paths)

@@ -38,15 +38,16 @@ Full theoretical background, model design, evaluation metrics, and experimental 
 This project used Python 3.12.3 in a virtual `venv` environment.
 
 3. Prepare your dataset:
-    1. Create a directory named `corrected_labeled_data_CLOUD` and place all `.dat` files inside.
-    2. The `.dat` files should have the format `(area_name)_(date_of_capture)-l1a_products_dn_class.dat`.
-    3. Have a directory with all relevant raw `.bip` files called `raw_data`.
-    4. Run the function `create_csv_file` in `manage_data.py` to create CSV files with correct paths.
+    1. Get the raw data from HYPSO-2:
+        ```bash
+        python3 scraping/get_data1.py
+        ```
+    2. Run the function `create_csv_file` in `manage_data.py` to create CSV files with correct paths.
 
 4. Train and evaluate the model:
 
     ```bash
-    python scripts/train.py
+    python3 scripts/train.py
     ```
 
 ## Structure
